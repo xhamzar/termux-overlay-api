@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Required Permissions for Overlay and Background Execution -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyApplication">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Overlay Binder & Foreground Service -->
+        <service
+            android:name=".service.OverlayBinderService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="specialUse">
+            <intent-filter>
+                <action android:name="com.example.IOverlayService" />
+                <action android:name="com.example.termuxoverlay.SHOW_TEXT" />
+                <action android:name="com.example.termuxoverlay.UPDATE_TEXT" />
+                <action android:name="com.example.termuxoverlay.SHOW_BUTTON" />
+                <action android:name="com.example.termuxoverlay.SHOW_IMAGE" />
+                <action android:name="com.example.termuxoverlay.HIDE" />
+                <action android:name="com.example.termuxoverlay.SET_ALPHA" />
+                <action android:name="com.example.termuxoverlay.SET_POS" />
+                <action android:name="com.example.termuxoverlay.STOP_SERVICE" />
+            </intent-filter>
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Termux Overlay Binder IPC daemon service for terminal floating window control" />
+        </service>
+
+        <!-- Boot Receiver for Optional Auto-Start -->
+        <receiver
+            android:name=".service.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

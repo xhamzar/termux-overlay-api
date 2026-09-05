@@ -1,0 +1,189 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ==============================================================================
+# Termux Overlay CLI (Termux:Overlay API Client)
+# Open source Android floating window controller for Linux/Termux environments.
+# ==============================================================================
+
+PACKAGE="com.aistudio.termuxoverlay.api"
+SERVICE_CLASS="com.example.service.OverlayBinderService"
+COMPONENT="${PACKAGE}/${SERVICE_CLASS}"
+
+print_help() {
+    cat << 'EOF'
+Termux Overlay API - CLI Client
+Control floating Android overlay windows directly from Termux.
+
+Usage:
+  overlay show <text>            Show floating text overlay
+  overlay update <text>          Update text in the visible overlay
+  overlay button <label>         Show floating actionable button
+  overlay image <path>           Show local image in floating overlay
+  overlay hide                   Hide and dismiss overlay window
+  overlay alpha <0.1 - 1.0>      Set window transparency alpha
+  overlay pos <x> <y>            Set window screen position (px)
+  overlay status                 Check overlay service status
+  overlay stop                   Stop background overlay daemon service
+  overlay help                   Show this help message
+
+Examples:
+  overlay show "Build completed successfully in 4.2s!"
+  overlay update "CPU: 42% | RAM: 3.2GB / 8GB"
+  overlay button "DEPLOY"
+  overlay image "$HOME/screenshot.png"
+  overlay alpha 0.85
+  overlay pos 50 200
+  overlay hide
+
+EOF
+}
+
+# Fallback check for am / cmd activity
+if command -v cmd >/dev/null 2>&1; then
+    AM_CMD="cmd activity"
+elif command -v am >/dev/null 2>&1; then
+    AM_CMD="am"
+else
+    AM_CMD="/system/bin/am"
+fi
+
+COMMAND="$1"
+shift 2>/dev/null || true
+
+case "$COMMAND" in
+    show)
+        TEXT="$*"
+        if [ -z "$TEXT" ]; then
+            echo "Error: Please specify text to display."
+            echo "Usage: overlay show <text>"
+            exit 1
+        fi
+        $AM_CMD start-foreground-service -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SHOW_TEXT" \
+            --es "extra_text" "$TEXT" >/dev/null 2>&1 || \
+        $AM_CMD startservice -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SHOW_TEXT" \
+            --es "extra_text" "$TEXT" >/dev/null 2>&1
+        echo "[✓] Overlay text displayed: $TEXT"
+        ;;
+
+    update)
+        TEXT="$*"
+        if [ -z "$TEXT" ]; then
+            echo "Error: Please specify text to update."
+            echo "Usage: overlay update <text>"
+            exit 1
+        fi
+        $AM_CMD start-foreground-service -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.UPDATE_TEXT" \
+            --es "extra_text" "$TEXT" >/dev/null 2>&1 || \
+        $AM_CMD startservice -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.UPDATE_TEXT" \
+            --es "extra_text" "$TEXT" >/dev/null 2>&1
+        echo "[✓] Overlay text updated: $TEXT"
+        ;;
+
+    button)
+        LABEL="$*"
+        if [ -z "$LABEL" ]; then
+            LABEL="CLICK ME"
+        fi
+        $AM_CMD start-foreground-service -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SHOW_BUTTON" \
+            --es "extra_label" "$LABEL" >/dev/null 2>&1 || \
+        $AM_CMD startservice -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SHOW_BUTTON" \
+            --es "extra_label" "$LABEL" >/dev/null 2>&1
+        echo "[✓] Overlay button displayed: [$LABEL]"
+        ;;
+
+    image)
+        IMG_PATH="$1"
+        if [ -z "$IMG_PATH" ]; then
+            echo "Error: Please specify image file path."
+            echo "Usage: overlay image <path>"
+            exit 1
+        fi
+        # Resolve absolute path if relative
+        REAL_PATH=$(realpath "$IMG_PATH" 2>/dev/null || echo "$IMG_PATH")
+        if [ ! -f "$REAL_PATH" ]; then
+            echo "Warning: File does not exist at: $REAL_PATH"
+        fi
+        $AM_CMD start-foreground-service -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SHOW_IMAGE" \
+            --es "extra_path" "$REAL_PATH" >/dev/null 2>&1 || \
+        $AM_CMD startservice -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SHOW_IMAGE" \
+            --es "extra_path" "$REAL_PATH" >/dev/null 2>&1
+        echo "[✓] Overlay image dispatched: $REAL_PATH"
+        ;;
+
+    hide)
+        $AM_CMD start-foreground-service -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.HIDE" >/dev/null 2>&1 || \
+        $AM_CMD startservice -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.HIDE" >/dev/null 2>&1
+        echo "[✓] Overlay hidden"
+        ;;
+
+    alpha)
+        ALPHA="$1"
+        if [ -z "$ALPHA" ]; then
+            echo "Usage: overlay alpha <0.1 - 1.0>"
+            exit 1
+        fi
+        $AM_CMD start-foreground-service -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SET_ALPHA" \
+            --ef "extra_alpha" "$ALPHA" >/dev/null 2>&1 || \
+        $AM_CMD startservice -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SET_ALPHA" \
+            --ef "extra_alpha" "$ALPHA" >/dev/null 2>&1
+        echo "[✓] Overlay alpha set to: $ALPHA"
+        ;;
+
+    pos)
+        POS_X="$1"
+        POS_Y="$2"
+        if [ -z "$POS_X" ] || [ -z "$POS_Y" ]; then
+            echo "Usage: overlay pos <x> <y>"
+            exit 1
+        fi
+        $AM_CMD start-foreground-service -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SET_POS" \
+            --ei "extra_pos_x" "$POS_X" \
+            --ei "extra_pos_y" "$POS_Y" >/dev/null 2>&1 || \
+        $AM_CMD startservice -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.SET_POS" \
+            --ei "extra_pos_x" "$POS_X" \
+            --ei "extra_pos_y" "$POS_Y" >/dev/null 2>&1
+        echo "[✓] Overlay position set to: ($POS_X, $POS_Y)"
+        ;;
+
+    stop)
+        $AM_CMD start-foreground-service -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.STOP_SERVICE" >/dev/null 2>&1 || \
+        $AM_CMD startservice -n "$COMPONENT" \
+            -a "com.example.termuxoverlay.STOP_SERVICE" >/dev/null 2>&1
+        echo "[✓] Overlay service stopped"
+        ;;
+
+    status)
+        echo "=== Termux Overlay Service Status ==="
+        RUNNING=$(ps -ef 2>/dev/null | grep "$PACKAGE" | grep -v grep || true)
+        if [ -n "$RUNNING" ]; then
+            echo "Status: RUNNING"
+            echo "$RUNNING"
+        else
+            echo "Status: STOPPED (Will be auto-started when next overlay command is run)"
+        fi
+        ;;
+
+    help|--help|-h|"")
+        print_help
+        ;;
+
+    *)
+        echo "Unknown command: $COMMAND"
+        print_help
+        exit 1
+        ;;
+esac

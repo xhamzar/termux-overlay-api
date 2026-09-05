@@ -1,0 +1,6 @@
+{
+  "name": "Termux Overlay API",
+  "description": "Open-source Android floating overlay window engine controlled from Termux CLI via Binder IPC and AIDL interface.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
